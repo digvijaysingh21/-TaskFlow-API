@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 
+from app.routers import tasks
+
 settings = get_settings()
 
 
@@ -40,6 +42,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ROUTERS -----------------------------------------------
+app.include_router(tasks.router)
 
 # -- HEALTH CHeck ROUTE--
 

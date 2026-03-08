@@ -1,0 +1,62 @@
+# =============================================================================
+# DocQA — .gitignore
+# =============================================================================
+
+# --- Environment & Secrets (NEVER commit these) ---
+.env
+.env.local
+.env.production
+.env.staging
+*.pem
+*.key
+secrets/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.pyc
+
+
+# --- Uploads & User Data (never commit user files) ---
+backend/uploads/
+uploads/
+
+# --- Node / Frontend ---
+node_modules/
+frontend/dist/
+frontend/.next/
+frontend/build/
+.npm
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Docker ---
+*.log
+
+# --- Alembic (keep migrations, ignore cache) ---
+backend/db/migrations/__pycache__/
+
+# --- Monitoring data (runtime, not source) ---
+prometheus_data/
+grafana_data/

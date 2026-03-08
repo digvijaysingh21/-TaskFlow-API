@@ -71,8 +71,8 @@ taskflow/
 | #   | Session              | Core Concept                                   | Files Created                                      | Status  |
 | --- | -------------------- | ---------------------------------------------- | -------------------------------------------------- | ------- |
 | 01  | FastAPI Foundations  | ASGI vs WSGI, Uvicorn, App instance, Lifespan  | `main.py`, `config.py`, `.env`, `requirements.txt` | ✅ Done |
-| 02  | Routes & Parameters  | Path params, Query params, HTTP methods        | `routers/tasks.py` (basic)                         | ⏳ Next |
-| 03  | Pydantic Models      | BaseModel, Field, validators, nested models    | `schemas/` (all files)                             | ⬜      |
+| 02  | Routes & Parameters  | Path params, Query params, HTTP methods        | `routers/__init__.py`, `routers/tasks.py`          | ✅ Done |
+| 03  | Pydantic Models      | BaseModel, Field, validators, nested models    | `schemas/` (all files)                             | ⏳ Next |
 | 04  | Request & Response   | response_model, HTTPException, status codes    | Update routers                                     | ⬜      |
 | 05  | Async / Await        | Event loop, async def, asyncio.gather          | All routes go async                                | ⬜      |
 | 06  | Database Setup       | Async SQLAlchemy, engine, session, Alembic     | `database.py`, `models/`                           | ⬜      |
@@ -114,8 +114,7 @@ taskflow/
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/digvijaysingh21/-TaskFlow-API.git
-
+git clone https://github.com/yourusername/taskflow-api.git
 cd taskflow-api
 
 # 2. Create virtual environment
@@ -140,10 +139,12 @@ Open: http://localhost:8000/docs
 
 ## 🗓️ Daily Streak Log
 
-| Date       | Session    | What I Learned                                   | Commits                                  |
-| ---------- | ---------- | ------------------------------------------------ | ---------------------------------------- |
-| 2026-03-08 | Session 01 | FastAPI, ASGI vs WSGI, Uvicorn, lifespan, config | `init: project setup + main.py + config` |
-|            |            |                                                  |                                          |
+| Date       | Session    | What I Learned                                                            | Commits                                                |
+| ---------- | ---------- | ------------------------------------------------------------------------- | ------------------------------------------------------ |
+| 2026-03-08 | Session 01 | FastAPI, ASGI vs WSGI, Uvicorn, lifespan, config                          | `init: project setup + main.py + config`               |
+| 2026-03-08 | Session 02 | Routes, path params, query params, HTTP methods, PUT vs PATCH, 204 status | `feat: session 02 — routes, path params, query params` |
+
+> Update this table every day you code. Even 30 minutes counts. Consistency > intensity.
 
 ---
 
@@ -158,9 +159,8 @@ Open: http://localhost:8000/docs
 
 ## 💡 Key Concepts Mastered
 
-_(Add one line here after each session )_
-
 - **Session 01:** FastAPI is an ASGI framework. ASGI = async request handling. Uvicorn is the server that runs it. `lru_cache` on settings = read `.env` once and cache it.
+- **Session 02:** Routes = HTTP method + URL path. Path params identify a resource (`/tasks/5`). Query params filter it (`?status=pending`). Specific routes must come before parameterized ones. PUT = full replace, PATCH = partial update, DELETE returns 204 (no body).
 
 ---
 

@@ -215,11 +215,15 @@
 
 
 from fastapi import APIRouter, HTTPException, Query, Path, Body
+from fastapi.responses import JSONResponse
 from typing import Optional
 from datetime import datetime
 
 from app.schemas.task import TaskCreate, TaskUpdate, TaskOut, TaskListResponse
 from app.schemas.enums import TaskStatus, TaskPriority
+
+from app.schemas.common import SuccessResponse
+from app.utils.errors import raise_not_found, raise_bad_request
 
 router = APIRouter(
     prefix="/tasks",
@@ -245,16 +249,22 @@ fake_tasks_db = [
     },
 ]
 
-
-@router.get("/", response_model=TaskListResponse, summary="Get all tasks")
+# ── GET /tasks/ ──────────────────────────────────────────────────────
+@router.get(
+    "/",
+    response_model=TaskListResponse,
+    summary="Get all tasks",
+    responses={400: {"description": "Invalid filter value"}},
+)
 async def get_tasks(
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=10, ge=1, le=100),
-    status: Optional[TaskStatus] = Query(default=None),
-    priority: Optional[TaskPriority] = Query(default=None),
-    project_id: Optional[int] = Query(default=None),
+    skip: int = Query(default=0, ge=0, description="Records to skip"),
+    limit: int = Query(default=10, ge=1, le=100, description="Max records to return"),
+    status: Optional[TaskStatus] = Query(default=None, description="Filter by status"),
+    priority: Optional[TaskPriority] = Query(default=None, description="Filter by priority"),
+    project_id: Optional[int] = Query(default=None, ge=1, description="Filter by project"),
 ):
-    results = fake_tasks_db
+    results = list(fake_tasks_db)
+
     if status:
         results = [t for t in results if t["status"] == status.value]
     if priority:
@@ -270,8 +280,12 @@ async def get_tasks(
         data=results[skip: skip + limit],
     )
 
-
-@router.get("/stats", summary="Get task statistics")
+# ── GET /tasks/stats ─────────────────────────────────────────────────
+@router.get(
+    "/stats",
+    summary="Get task statistics",
+    response_description="Breakdown of tasks by status and priority",
+)
 async def get_task_stats():
     stats = {"total": len(fake_tasks_db), "by_status": {}, "by_priority": {}}
     for task in fake_tasks_db:
@@ -282,16 +296,48 @@ async def get_task_stats():
     return stats
 
 
-@router.get("/{task_id}", response_model=TaskOut, summary="Get a single task")
-async def get_task(task_id: int = Path(..., ge=1)):
+# ── GET /tasks/{task_id} ─────────────────────────────────────────────
+@router.get(
+    "/{task_id}",
+    response_model=TaskOut,
+    response_model_exclude_unset=True,
+    summary="Get a single task",
+    responses={
+        404: {"description": "Task not found"},
+    },
+)
+async def get_task(task_id: int = Path(..., ge=1, description="Task ID")):
     task = next((t for t in fake_tasks_db if t["id"] == task_id), None)
     if not task:
-        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+        raise_not_found("Task", task_id)
     return task
 
 
-@router.post("/", response_model=TaskOut, status_code=201, summary="Create a task")
+# ── POST /tasks/ ─────────────────────────────────────────────────────
+@router.post(
+    "/",
+    response_model=TaskOut,
+    status_code=201,
+    summary="Create a new task",
+    responses={
+        201: {"description": "Task created successfully"},
+        409: {"description": "Duplicate task title in same project"},
+    },
+)
 async def create_task(task: TaskCreate):
+    # Business logic validation — check for duplicate title in same project
+    duplicate = next(
+        (t for t in fake_tasks_db
+         if t["title"].lower() == task.title.lower()
+         and t["project_id"] == task.project_id),
+        None,
+    )
+    if duplicate:
+        raise_bad_request(
+            message=f"A task named '{task.title}' already exists in this project",
+            field="title",
+        )
+
     new_task = {
         "id": len(fake_tasks_db) + 1,
         **task.model_dump(),
@@ -299,49 +345,73 @@ async def create_task(task: TaskCreate):
         "updated_at": datetime.now(),
     }
     fake_tasks_db.append(new_task)
-    return new_task
+    return JSONResponse(content=None, status_code=201) if False else new_task
+    # ↑ returning new_task directly — FastAPI + response_model handles serialization
 
 
-# ── PUT /tasks/{task_id} ────────────────────────────────────────────
-@router.put("/{task_id}", response_model=TaskOut, summary="Fully update a task")
+
+# ── PUT /tasks/{task_id} ─────────────────────────────────────────────
+@router.put(
+    "/{task_id}",
+    response_model=TaskOut,
+    summary="Fully update a task",
+    responses={404: {"description": "Task not found"}},
+)
 async def update_task(
     task_id: int = Path(..., ge=1),
-    task: TaskCreate = Body(...),  # PUT uses TaskCreate — all fields required, full replacement
+    task: TaskCreate = Body(...),
 ):
     index = next((i for i, t in enumerate(fake_tasks_db) if t["id"] == task_id), None)
     if index is None:
-        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+        raise_not_found("Task", task_id)
 
     updated = {
         "id": task_id,
-        **task.model_dump(),  # full replacement — all fields overwritten
-        "created_at": fake_tasks_db[index]["created_at"],  # preserve original created_at
+        **task.model_dump(),
+        "created_at": fake_tasks_db[index]["created_at"],
         "updated_at": datetime.now(),
     }
     fake_tasks_db[index] = updated
     return updated
 
-
-@router.patch("/{task_id}", response_model=TaskOut, summary="Partially update a task")
+# ── PATCH /tasks/{task_id} ───────────────────────────────────────────
+@router.patch(
+    "/{task_id}",
+    response_model=TaskOut,
+    response_model_exclude_unset=True,
+    summary="Partially update a task",
+    responses={404: {"description": "Task not found"}},
+)
 async def partial_update_task(
     task_id: int = Path(..., ge=1),
-    task: TaskUpdate = None,
+    task: TaskUpdate = Body(...),
 ):
     index = next((i for i, t in enumerate(fake_tasks_db) if t["id"] == task_id), None)
     if index is None:
-        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+        raise_not_found("Task", task_id)
 
-    # model_dump(exclude_unset=True) → only fields the client actually sent
     updates = task.model_dump(exclude_unset=True)
+    if not updates:
+        raise_bad_request("No fields provided to update")
+
     fake_tasks_db[index].update(updates)
     fake_tasks_db[index]["updated_at"] = datetime.now()
     return fake_tasks_db[index]
 
-
-@router.delete("/{task_id}", status_code=204, summary="Delete a task")
+# ── DELETE /tasks/{task_id} ──────────────────────────────────────────
+@router.delete(
+    "/{task_id}",
+    status_code=204,
+    summary="Delete a task",
+    responses={
+        204: {"description": "Task deleted successfully"},
+        404: {"description": "Task not found"},
+    },
+)
 async def delete_task(task_id: int = Path(..., ge=1)):
     index = next((i for i, t in enumerate(fake_tasks_db) if t["id"] == task_id), None)
     if index is None:
-        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+        raise_not_found("Task", task_id)
+
     fake_tasks_db.pop(index)
     return None

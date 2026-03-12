@@ -68,27 +68,27 @@ taskflow/
 
 ## 📚 Learning Curriculum — Session Log
 
-| #   | Session              | Core Concept                                   | Files Created                                      | Status  |
-| --- | -------------------- | ---------------------------------------------- | -------------------------------------------------- | ------- |
-| 01  | FastAPI Foundations  | ASGI vs WSGI, Uvicorn, App instance, Lifespan  | `main.py`, `config.py`, `.env`, `requirements.txt` | ✅ Done |
-| 02  | Routes & Parameters  | Path params, Query params, HTTP methods        | `routers/__init__.py`, `routers/tasks.py`          | ✅ Done |
-| 03  | Pydantic Models      | BaseModel, Field, validators, nested models    | `schemas/` (all files)                             | ⏳ Next |
-| 04  | Request & Response   | response_model, HTTPException, status codes    | Update routers                                     | ⬜      |
-| 05  | Async / Await        | Event loop, async def, asyncio.gather          | All routes go async                                | ⬜      |
-| 06  | Database Setup       | Async SQLAlchemy, engine, session, Alembic     | `database.py`, `models/`                           | ⬜      |
-| 07  | Dependency Injection | Depends(), yield deps, chaining, DB session    | `dependencies/`                                    | ⬜      |
-| 08  | Authentication       | JWT, OAuth2, register, login, protected routes | `utils/security.py`, `routers/auth.py`             | ⬜      |
-| 09  | Routers & Structure  | APIRouter, prefix, tags, large app layout      | Refactor all routers                               | ⬜      |
-| 10  | Middleware           | Custom middleware, request ID, timing          | `middleware/`                                      | ⬜      |
-| 11  | Error Handling       | Global exception handlers, validation errors   | Update `main.py`                                   | ⬜      |
-| 12  | Background Tasks     | BackgroundTasks, Celery, Redis broker          | `services/notification_service.py`                 | ⬜      |
-| 13  | File Uploads         | UploadFile, multipart, storing files           | Update task router                                 | ⬜      |
-| 14  | Redis Caching        | Cache patterns, invalidation                   | `utils/cache.py`                                   | ⬜      |
-| 15  | Rate Limiting        | slowapi, per-IP limits                         | Update `main.py`                                   | ⬜      |
-| 16  | WebSockets           | Real-time updates, connection manager          | `routers/websocket.py`                             | ⬜      |
-| 17  | SSE / Streaming      | StreamingResponse, activity log                | Update routers                                     | ⬜      |
-| 18  | Testing              | pytest, AsyncClient, fixtures, overrides       | `tests/`                                           | ⬜      |
-| 19  | Docker + Deploy      | Dockerfile, docker-compose, Nginx, Gunicorn    | `Dockerfile`, `docker-compose.yml`                 | ⬜      |
+| #   | Session              | Core Concept                                   | Files Created                                                                                      | Status  |
+| --- | -------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------- |
+| 01  | FastAPI Foundations  | ASGI vs WSGI, Uvicorn, App instance, Lifespan  | `main.py`, `config.py`, `.env`, `requirements.txt`                                                 | ✅ Done |
+| 02  | Routes & Parameters  | Path params, Query params, HTTP methods        | `routers/__init__.py`, `routers/tasks.py`                                                          | ✅ Done |
+| 03  | Pydantic Models      | BaseModel, Field, validators, nested models    | `schemas/enums.py`, `schemas/task.py`, `schemas/user.py`, `schemas/project.py`, `schemas/token.py` | ✅ Done |
+| 04  | Request & Response   | response_model, HTTPException, status codes    | Update routers                                                                                     | ⏳ Next |
+| 05  | Async / Await        | Event loop, async def, asyncio.gather          | All routes go async                                                                                | ⬜      |
+| 06  | Database Setup       | Async SQLAlchemy, engine, session, Alembic     | `database.py`, `models/`                                                                           | ⬜      |
+| 07  | Dependency Injection | Depends(), yield deps, chaining, DB session    | `dependencies/`                                                                                    | ⬜      |
+| 08  | Authentication       | JWT, OAuth2, register, login, protected routes | `utils/security.py`, `routers/auth.py`                                                             | ⬜      |
+| 09  | Routers & Structure  | APIRouter, prefix, tags, large app layout      | Refactor all routers                                                                               | ⬜      |
+| 10  | Middleware           | Custom middleware, request ID, timing          | `middleware/`                                                                                      | ⬜      |
+| 11  | Error Handling       | Global exception handlers, validation errors   | Update `main.py`                                                                                   | ⬜      |
+| 12  | Background Tasks     | BackgroundTasks, Celery, Redis broker          | `services/notification_service.py`                                                                 | ⬜      |
+| 13  | File Uploads         | UploadFile, multipart, storing files           | Update task router                                                                                 | ⬜      |
+| 14  | Redis Caching        | Cache patterns, invalidation                   | `utils/cache.py`                                                                                   | ⬜      |
+| 15  | Rate Limiting        | slowapi, per-IP limits                         | Update `main.py`                                                                                   | ⬜      |
+| 16  | WebSockets           | Real-time updates, connection manager          | `routers/websocket.py`                                                                             | ⬜      |
+| 17  | SSE / Streaming      | StreamingResponse, activity log                | Update routers                                                                                     | ⬜      |
+| 18  | Testing              | pytest, AsyncClient, fixtures, overrides       | `tests/`                                                                                           | ⬜      |
+| 19  | Docker + Deploy      | Dockerfile, docker-compose, Nginx, Gunicorn    | `Dockerfile`, `docker-compose.yml`                                                                 | ⬜      |
 
 ---
 
@@ -139,14 +139,11 @@ Open: http://localhost:8000/docs
 
 ## 🗓️ Daily Streak Log
 
-| Date       | Session    | What I Learned                                                            | Commits                                                |
-| ---------- | ---------- | ------------------------------------------------------------------------- | ------------------------------------------------------ |
-| 2026-03-08 | Session 01 | FastAPI, ASGI vs WSGI, Uvicorn, lifespan, config                          | `init: project setup + main.py + config`               |
-| 2026-03-08 | Session 02 | Routes, path params, query params, HTTP methods, PUT vs PATCH, 204 status | `feat: session 02 — routes, path params, query params` |
-
-> Update this table every day you code. Even 30 minutes counts. Consistency > intensity.
-
----
+| Date       | Session    | What I Learned                                                                                            | Commits                                                  |
+| ---------- | ---------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| 2026-03-08 | Session 01 | FastAPI, ASGI vs WSGI, Uvicorn, lifespan, config                                                          | `init: project setup + main.py + config`                 |
+| 2026-03-08 | Session 02 | Routes, path params, query params, HTTP methods, PUT vs PATCH, 204 status                                 | `feat: session 02 — routes, path params, query params`   |
+| 2026-03-12 | Session 03 | Pydantic BaseModel, Field, Enums, field_validator, model_validator, schema separation (Create/Update/Out) | `feat: session 03 — pydantic schemas, enums, validators` |
 
 ## 🎯 Goals
 
@@ -161,6 +158,7 @@ Open: http://localhost:8000/docs
 
 - **Session 01:** FastAPI is an ASGI framework. ASGI = async request handling. Uvicorn is the server that runs it. `lru_cache` on settings = read `.env` once and cache it.
 - **Session 02:** Routes = HTTP method + URL path. Path params identify a resource (`/tasks/5`). Query params filter it (`?status=pending`). Specific routes must come before parameterized ones. PUT = full replace, PATCH = partial update, DELETE returns 204 (no body).
+- **Session 03:** Pydantic validates raw JSON into typed Python objects automatically. Always have 3 schemas per model — Create (required fields), Update (all optional, for PATCH), Out (what you return, never expose password). `model_dump(exclude_unset=True)` on PATCH = only update what the client actually sent. `from_attributes=True` = read from SQLAlchemy ORM objects, not just dicts.
 
 ---
 
@@ -172,3 +170,5 @@ Open: http://localhost:8000/docs
 - [Alembic Docs](https://alembic.sqlalchemy.org)
 
 ---
+
+_Built session by session. One concept at a time. No shortcuts._

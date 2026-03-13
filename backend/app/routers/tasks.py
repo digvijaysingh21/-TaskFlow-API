@@ -214,16 +214,19 @@
 
 
 
-from fastapi import APIRouter, HTTPException, Query, Path, Body
+from fastapi import APIRouter, HTTPException, Query, Path, Body, BackgroundTasks
 from fastapi.responses import JSONResponse
 from typing import Optional
 from datetime import datetime
+import asyncio
 
 from app.schemas.task import TaskCreate, TaskUpdate, TaskOut, TaskListResponse
 from app.schemas.enums import TaskStatus, TaskPriority
 
 from app.schemas.common import SuccessResponse
 from app.utils.errors import raise_not_found, raise_bad_request
+
+from app.utils.background import log_task_created, log_task_deleted, log_task_updated, notify_assignee
 
 router = APIRouter(
     prefix="/tasks",
@@ -254,31 +257,36 @@ fake_tasks_db = [
     "/",
     response_model=TaskListResponse,
     summary="Get all tasks",
-    responses={400: {"description": "Invalid filter value"}},
+    responses={400: {"description": "Invalid filter value"}},  # ← from old
 )
 async def get_tasks(
-    skip: int = Query(default=0, ge=0, description="Records to skip"),
-    limit: int = Query(default=10, ge=1, le=100, description="Max records to return"),
-    status: Optional[TaskStatus] = Query(default=None, description="Filter by status"),
-    priority: Optional[TaskPriority] = Query(default=None, description="Filter by priority"),
-    project_id: Optional[int] = Query(default=None, ge=1, description="Filter by project"),
+    skip: int = Query(default=0, ge=0, description="Records to skip"),                          # ← from old
+    limit: int = Query(default=10, ge=1, le=100, description="Max records to return"),          # ← from old
+    status: Optional[TaskStatus] = Query(default=None, description="Filter by status"),         # ← from old
+    priority: Optional[TaskPriority] = Query(default=None, description="Filter by priority"),   # ← from old
+    project_id: Optional[int] = Query(default=None, ge=1, description="Filter by project"),    # ← from old
 ):
-    results = list(fake_tasks_db)
+    async def filter_by_status(tasks, s):
+        await asyncio.sleep(0)
+        return [t for t in tasks if t["status"] == s.value] if s else tasks
 
-    if status:
-        results = [t for t in results if t["status"] == status.value]
-    if priority:
-        results = [t for t in results if t["priority"] == priority.value]
+    async def filter_by_priority(tasks, p):
+        await asyncio.sleep(0)
+        return [t for t in tasks if t["priority"] == p.value] if p else tasks
+
+    status_filtered, priority_filtered = await asyncio.gather(
+        filter_by_status(fake_tasks_db, status),
+        filter_by_priority(fake_tasks_db, priority),
+    )
+
+    priority_ids = {t["id"] for t in priority_filtered}
+    results = [t for t in status_filtered if t["id"] in priority_ids]
+
     if project_id:
         results = [t for t in results if t["project_id"] == project_id]
 
     total = len(results)
-    return TaskListResponse(
-        total=total,
-        skip=skip,
-        limit=limit,
-        data=results[skip: skip + limit],
-    )
+    return TaskListResponse(total=total, skip=skip, limit=limit, data=results[skip: skip + limit])
 
 # ── GET /tasks/stats ─────────────────────────────────────────────────
 @router.get(
@@ -287,13 +295,32 @@ async def get_tasks(
     response_description="Breakdown of tasks by status and priority",
 )
 async def get_task_stats():
-    stats = {"total": len(fake_tasks_db), "by_status": {}, "by_priority": {}}
-    for task in fake_tasks_db:
-        s = task["status"]
-        stats["by_status"][s] = stats["by_status"].get(s, 0) + 1
-        p = task["priority"]
-        stats["by_priority"][p] = stats["by_priority"].get(p, 0) + 1
-    return stats
+    # Simulate two concurrent DB aggregation queries
+    async def count_by_status():
+        await asyncio.sleep(0)
+        counts = {}
+        for task in fake_tasks_db:
+            counts[task["status"]] = counts.get(task["status"], 0) + 1
+        return counts
+
+    async def count_by_priority():
+        await asyncio.sleep(0)
+        counts = {}
+        for task in fake_tasks_db:
+            counts[task["priority"]] = counts.get(task["priority"], 0) + 1
+        return counts
+
+    # Both run concurrently
+    by_status, by_priority = await asyncio.gather(
+        count_by_status(),
+        count_by_priority(),
+    )
+
+    return {
+        "total": len(fake_tasks_db),
+        "by_status": by_status,
+        "by_priority": by_priority,
+    }
 
 
 # ── GET /tasks/{task_id} ─────────────────────────────────────────────
@@ -324,7 +351,7 @@ async def get_task(task_id: int = Path(..., ge=1, description="Task ID")):
         409: {"description": "Duplicate task title in same project"},
     },
 )
-async def create_task(task: TaskCreate):
+async def create_task(task: TaskCreate,  background_tasks: BackgroundTasks):
     # Business logic validation — check for duplicate title in same project
     duplicate = next(
         (t for t in fake_tasks_db
@@ -345,9 +372,18 @@ async def create_task(task: TaskCreate):
         "updated_at": datetime.now(),
     }
     fake_tasks_db.append(new_task)
-    return JSONResponse(content=None, status_code=201) if False else new_task
-    # ↑ returning new_task directly — FastAPI + response_model handles serialization
 
+    # Fire and forget — these run AFTER response is sent
+    background_tasks.add_task(log_task_created, new_task["id"], new_task["title"], user_id=1)
+    if new_task.get("assigned_to"):
+        background_tasks.add_task(
+            notify_assignee,
+            new_task["id"],
+            new_task["assigned_to"],
+            f"You have been assigned to task: {new_task['title']}",
+        )
+
+    return new_task
 
 
 # ── PUT /tasks/{task_id} ─────────────────────────────────────────────
@@ -360,6 +396,7 @@ async def create_task(task: TaskCreate):
 async def update_task(
     task_id: int = Path(..., ge=1),
     task: TaskCreate = Body(...),
+    background_tasks: BackgroundTasks = None,
 ):
     index = next((i for i, t in enumerate(fake_tasks_db) if t["id"] == task_id), None)
     if index is None:
@@ -372,6 +409,9 @@ async def update_task(
         "updated_at": datetime.now(),
     }
     fake_tasks_db[index] = updated
+
+    background_tasks.add_task(log_task_updated, task_id, task.model_dump(), user_id=1)
+
     return updated
 
 # ── PATCH /tasks/{task_id} ───────────────────────────────────────────
@@ -385,6 +425,7 @@ async def update_task(
 async def partial_update_task(
     task_id: int = Path(..., ge=1),
     task: TaskUpdate = Body(...),
+    background_tasks: BackgroundTasks = None,
 ):
     index = next((i for i, t in enumerate(fake_tasks_db) if t["id"] == task_id), None)
     if index is None:
@@ -396,6 +437,8 @@ async def partial_update_task(
 
     fake_tasks_db[index].update(updates)
     fake_tasks_db[index]["updated_at"] = datetime.now()
+
+    background_tasks.add_task(log_task_updated, task_id, updates, user_id=1)
     return fake_tasks_db[index]
 
 # ── DELETE /tasks/{task_id} ──────────────────────────────────────────
@@ -408,10 +451,14 @@ async def partial_update_task(
         404: {"description": "Task not found"},
     },
 )
-async def delete_task(task_id: int = Path(..., ge=1)):
+async def delete_task(
+    task_id: int = Path(..., ge=1),
+    background_tasks: BackgroundTasks = None,
+    ):
     index = next((i for i, t in enumerate(fake_tasks_db) if t["id"] == task_id), None)
     if index is None:
         raise_not_found("Task", task_id)
 
     fake_tasks_db.pop(index)
+    background_tasks.add_task(log_task_deleted, task_id, user_id=1)
     return None

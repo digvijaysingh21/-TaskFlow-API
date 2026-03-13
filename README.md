@@ -9,8 +9,6 @@
 This project is a **structured learning journey** through backend engineering using Python + FastAPI.
 Every session adds new files, new concepts, and new working code to the same real-world project.
 
-**Goal:** Become a production-ready backend / AI-ML engineer by building one real system end to end.
-
 ---
 
 ## 🗂️ Project Structure
@@ -74,8 +72,8 @@ taskflow/
 | 02  | Routes & Parameters  | Path params, Query params, HTTP methods        | `routers/__init__.py`, `routers/tasks.py`                                                          | ✅ Done |
 | 03  | Pydantic Models      | BaseModel, Field, validators, nested models    | `schemas/enums.py`, `schemas/task.py`, `schemas/user.py`, `schemas/project.py`, `schemas/token.py` | ✅ Done |
 | 04  | Request & Response   | response_model, HTTPException, status codes    | `schemas/common.py`, `utils/__init__.py`, `utils/errors.py`                                        | ✅ Done |
-| 05  | Async / Await        | Event loop, async def, asyncio.gather          | All routes go async                                                                                | ⏳ Next |
-| 06  | Database Setup       | Async SQLAlchemy, engine, session, Alembic     | `database.py`, `models/`                                                                           | ⬜      |
+| 05  | Async / Await        | Event loop, async def, asyncio.gather          | `utils/async_helpers.py`, `utils/background.py`                                                    | ✅ Done |
+| 06  | Database Setup       | Async SQLAlchemy, engine, session, Alembic     | `database.py`, `models/`                                                                           | ⏳ Next |
 | 07  | Dependency Injection | Depends(), yield deps, chaining, DB session    | `dependencies/`                                                                                    | ⬜      |
 | 08  | Authentication       | JWT, OAuth2, register, login, protected routes | `utils/security.py`, `routers/auth.py`                                                             | ⬜      |
 | 09  | Routers & Structure  | APIRouter, prefix, tags, large app layout      | Refactor all routers                                                                               | ⬜      |
@@ -144,7 +142,8 @@ Open: http://localhost:8000/docs
 | 2026-03-08 | Session 01 | FastAPI, ASGI vs WSGI, Uvicorn, lifespan, config                                                          | `init: project setup + main.py + config`                             |
 | 2026-03-08 | Session 02 | Routes, path params, query params, HTTP methods, PUT vs PATCH, 204 status                                 | `feat: session 02 — routes, path params, query params`               |
 | 2026-03-08 | Session 03 | Pydantic BaseModel, Field, Enums, field_validator, model_validator, schema separation (Create/Update/Out) | `feat: session 03 — pydantic schemas, enums, validators`             |
-| 2026-03-08 | Session 04 | response_model, status codes (201/204/400/401/403/404/409), structured errors, error helper functions     | `feat: session 04 — response_model, status codes, structured errors` |
+| 2026-03-12 | Session 04 | response_model, status codes (201/204/400/401/403/404/409), structured errors, error helper functions     | `feat: session 04 — response_model, status codes, structured errors` |
+| 2026-03-13 | Session 05 | Async/await, event loop, asyncio.gather, BackgroundTasks, async helpers, fire-and-forget logging          | `feat: session 05 — async/await, asyncio.gather, background tasks`   |
 
 ---
 
@@ -159,10 +158,13 @@ Open: http://localhost:8000/docs
 
 ## 💡 Key Concepts Mastered
 
+_(Add one line here after each session — in your own words)_
+
 - **Session 01:** FastAPI is an ASGI framework. ASGI = async request handling. Uvicorn is the server that runs it. `lru_cache` on settings = read `.env` once and cache it.
 - **Session 02:** Routes = HTTP method + URL path. Path params identify a resource (`/tasks/5`). Query params filter it (`?status=pending`). Specific routes must come before parameterized ones. PUT = full replace, PATCH = partial update, DELETE returns 204 (no body).
 - **Session 03:** Pydantic validates raw JSON into typed Python objects automatically. Always have 3 schemas per model — Create (required fields), Update (all optional, for PATCH), Out (what you return, never expose password). `model_dump(exclude_unset=True)` on PATCH = only update what the client actually sent. `from_attributes=True` = read from SQLAlchemy ORM objects, not just dicts.
 - **Session 04:** `response_model` filters, validates, and documents responses — sensitive fields never leak. 401 = not logged in, 403 = logged in but no permission, 400 = business logic error, 422 = Pydantic validation failure (automatic). Always use helper functions for errors so every error has the same shape across the entire API.
+- **Session 05:** Event loop = single-threaded scheduler that suspends coroutines at `await` and resumes them when I/O is ready. Never call blocking code inside `async def` — it freezes the entire server. `asyncio.gather()` runs multiple coroutines concurrently — 3 x 100ms queries become 100ms total. `BackgroundTasks` = fire-and-forget after response is sent. Use Celery for heavy/retryable tasks.
 
 ---
 
